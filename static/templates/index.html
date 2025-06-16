@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tableau de bord Tennis à Paris</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <!-- Chart.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+</head>
+
+<!-- Section feedback -->
+<section id="feedback" class="fade-in-up delay-1800" style="margin:2rem 0; text-align:center;">
+  <h2>Vous confirmez ces chiffres ?</h2>
+  <div style="font-size:1.1rem; margin-bottom:1rem;">
+    <label style="margin-right:2rem;">
+      <input type="radio" name="feedbackChoice" value="true" checked />
+      Oui, je valide ces statistiques
+    </label>
+    <label>
+      <input type="radio" name="feedbackChoice" value="false" />
+      Non, je ne les valide pas
+    </label>
+  </div>
+  <button id="submitFeedback" class="btn">Envoyer</button>
+  <p id="feedbackStatus" style="margin-top:1rem;"></p>
+</section>
+
+<script>
+  document.getElementById('submitFeedback').addEventListener('click', () => {
+    // on lit la valeur du radio sélectionné
+    const choice = document.querySelector('input[name="feedbackChoice"]:checked').value;
+    const accepted = choice === 'true';
+    const API_BASE = "https://9jfj836146.execute-api.eu-west-3.amazonaws.com/Prod";
+    fetch(`${API_BASE}/api/feedback`, {
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": "uklyk5e505"
+      },
+      body: JSON.stringify({ accepted:true })
+    })
+      .then(r => r.json())
+      .then(console.log)
+      .then(res => {
+        const msg = res.status === 'ok'
+          ? 'Merci pour votre retour !'
+          : 'Oups, une erreur est survenue. Réessayez.';
+        document.getElementById('feedbackStatus').innerText = msg;
+      })
+      .catch(() => {
+        document.getElementById('feedbackStatus').innerText = 'Erreur réseau.';
+        
+      });
+  });
+</script>
+
+
+
+<body>
+  <!-- ====== HEADER ====== -->
+  <header>
+    <!-- bandes bleu/blanc/rouge -->
+    <div class="stripe blue"></div>
+    <div class="stripe white"></div>
+    <div class="stripe red"></div>
+
+    <!-- titre + ballon de tennis animé -->
+    <img src="/static/images/balle_tennis.png" alt="Ballon de tennis" class="ball ball-left" />
+    
+    <h1>Les équipements de Tennis à Paris</h1>
+    
+    <!-- Balle de droite -->
+    <img src="/static/images/balle_tennis.png" alt="Ballon de tennis" class="ball ball-right" />
+  </header>
+
+  <!-- ====== MAIN ====== -->
+  <main>
+    <div class="panel">
+      <!-- 1) KPI cards -->
+      <section id="metrics" class="fade-in">
+        <h2>Statistiques par arrondissement</h2>
+        <table class="metrics-table">
+          <thead>
+            <tr>
+              <th>Arrondissement</th>
+              <th>Nombre total de terrains</th>
+              <th>Date de la première installation</th>
+              <th>Date de la dernière installation</th>
+              <th>Surface moyenne (m²)</th>
+            </tr>
+          </thead>
+          <tbody id="metrics-body">
+            <!-- On injectera ici une <tr> par arrondissement -->
+          </tbody>
+        </table>
+      </section>
+      
+
+      <!-- 2) Graphique surfaces -->
+        <h2>Répartition par type de surface</h2>
+        <canvas id="surfaceChart" style="width:100%;max-width:600px"></canvas>
+      </section>
+      
+      <!-- 3) Graphique travaux -->
+        <h2>Répartition par période de travaux</h2>
+        <canvas id="travauxChart" style="display:block; margin:0 auto; width: 500px;; height:500px;"></canvas>
+      </section>
+
+      <!-- 7) Barres groupées Transport vs Accessibilité -->
+        <h2>Transport vs Accessibilité handicap</h2>
+        <canvas id="transportAccessChart" style="display:block; margin:0 auto; width:700px; height:400px;">
+        </canvas>
+      </section>
+
+    <!-- 8) Scatter — Desserte vs Handicap -->
+      <h2>Scatter — Desserte vs Accessibilité handicap</h2>
+      <canvas id="scatterChart" style="display:block; margin:0 auto; width:700px; height:500px;">
+      </canvas>
+    </section>
+
+    <!-- 9) Série temporelle des créations -->
+      <h2>Évolution des installations dans le temps</h2>
+      <canvas id="timeSeriesChart" style="display:block; margin:0 auto; width:700px; height:400px;">
+      </canvas>
+    </section>
+
+      <!-- 6) Carte interactive -->
+
+      <section class="fade-in-up delay-1000">
+        <h2>Carte des terrains</h2>
+        <!-- on embarque /map.html dans l'iframe -->
+        <iframe src="/map" style="border: none; width: 100%; height: 500px; margin-top: 1rem;" title="Carte des terrains"></iframe>
+      </section>
+    </div>
+  </main>
+
+  <!-- ====== FOOTER ====== -->
+  <footer>
+    © 2025 – Dashboard Tennis Paris • Données : Data.gouv.fr • Réalisé par Neila, Ferdaous et Natali
+  </footer>
+
+  <!-- ====== SCRIPTS ====== -->
+  <!-- Leaflet JS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>  
+  <script>
+    fetch(`${API_BASE}/api/tennis_paris/metrics`, {
+        headers: { "x-api-key": "uklyk5e505" }
+      })
+        .then(r => r.json())
+        .then(data => {
+    const rows = data.data || [];
+          const tbody = document.getElementById('metrics-body');
+          tbody.innerHTML = '';
+          rows.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+    <td>${item.arrondissement}</td>
+    <td>${item.total}</td>
+    <td><strong class="date-cell">${item.oldest}</strong></td>
+    <td><strong class="date-cell">${item.newest}</strong></td>
+    <td>${item.avg_area.toFixed(1)}</td>
+  `;
+            tbody.appendChild(tr);
+          });
+          // 2) Pour les graphiques, on continue à utiliser payload.by_surface et payload.by_travaux_period
+          const ctx1 = document.getElementById('surfaceChart').getContext('2d');
+          new Chart(ctx1, {
+            type: 'bar',
+            data: {
+              labels: Object.keys(data.by_surface),
+              datasets: [{
+                label: 'Nombre de terrains',
+                data: Object.values(data.by_surface),
+                backgroundColor: 'rgba(0, 123, 255, 0.5)',
+                borderColor: 'rgba(0, 123, 255, 1)',
+                borderWidth: 1
+              }]
+            },
+            options: { responsive: false, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+          });
+
+          const ctx2 = document.getElementById('travauxChart').getContext('2d');
+          new Chart(ctx2, {
+            type: 'pie',
+            data: {
+              labels: Object.keys(data.by_travaux_period),
+              datasets: [{
+                data: Object.values(data.by_travaux_period),
+                backgroundColor: ['#1f78b4', '#e31a1c', '#ff7f00', '#ffe119'],
+                borderWidth: 1
+              }]
+            },
+            options: { responsive: false, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+          });
+
+          // ——— 3) Barres groupées Transport vs Accessibilité ———
+
+          // on suppose que data.data est votre array d'objets côté back
+          const transportRows = data.data || [];
+
+          // X = les arrondissements
+          const labels = transportRows.map(r => r.arrondissement);
+
+          // Y1 = % desservis par transports, Y2 = % accessibles handicap
+          const pctTransport = transportRows.map(r => r.pct_with_transport);
+          const pctAccessible = transportRows.map(r => r.pct_accessible_handicap);
+
+          const ctx3 = document.getElementById('transportAccessChart').getContext('2d');
+          new Chart(ctx3, {
+            type: 'bar',
+            data: {
+              labels,
+              datasets: [
+                {
+                  label: 'Desserte transports (%)',
+                  data: pctTransport,
+                  backgroundColor: 'rgba(54, 162, 235, 0.6)'
+                },
+                {
+                  label: 'Accessibilité handicap (%)',
+                  data: pctAccessible,
+                  backgroundColor: 'rgba(255, 159, 64, 0.6)'
+                }
+              ]
+            },
+            options: {
+              responsive: false,
+              maintainAspectRatio: false,
+              scales: {
+                x: {
+                  title: { display: true, text: 'Arrondissement' },
+                  ticks: { autoSkip: false, maxRotation: 45, minRotation: 45 }
+                },
+                y: {
+                  beginAtZero: true,
+                  max: 100,
+                  title: { display: true, text: 'Pourcentage (%)' },
+                  ticks: {
+                    callback: val => val + '%'
+                  }
+                }
+              },
+              plugins: {
+                legend: { position: 'top' },
+                tooltip: {
+                  callbacks: {
+                    label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y}%`
+                  }
+                }
+              }
+            }
+          });
+
+          // 4) Scatter — taille = total_installations
+          const scatterRows = Array.isArray(data.data) ? data.data : [];
+          // palette de couleurs pour alterner
+          const palette = [
+            '#4dc9f6', '#f67019', '#f53794', '#537bc4', '#acc236',
+            '#166a8f', '#00a950', '#58595b', '#8549ba'
+          ];
+
+          const datasets = scatterRows.map((item, i) => ({
+            label: item.arrondissement,
+            data: [{
+              x: item.pct_with_transport,
+              y: item.pct_accessible_handicap,
+              r: Math.sqrt(item.total) * 2
+            }],
+            backgroundColor: palette[i % palette.length]
+          }));
+
+          const ctx4 = document.getElementById('scatterChart').getContext('2d');
+          new Chart(ctx4, {
+            type: 'bubble',
+            data: { datasets },
+            options: {
+              responsive: false,
+              maintainAspectRatio: false,
+              scales: {
+                x: {
+                  title: { display: true, text: '% desservis par transports' },
+                  min: 0, max: 100
+                },
+                y: {
+                  title: { display: true, text: '% accessibles handicap' },
+                  min: 0, max: 100
+                }
+              },
+              plugins: {
+                legend: { position: 'right' },
+                tooltip: {
+                  callbacks: {
+                    label(ctx) {
+                      const { x, y, r } = ctx.raw;
+                      const total = Math.round((r / 2) ** 2);
+                      return `${ctx.dataset.label}: ${x}% transports, ${y}% handi (≈${total} terrains)`;
+                    }
+                  }
+                }
+              }
+            }
+          });
+          // 5) Série temporelle — Créations d’installations
+          const series = Array.isArray(data.creation_by_year)
+            ? data.creation_by_year
+            : [];
+          // Filtrer pour ne garder que les années valides (non nulles, non 0)
+          const filtered = series.filter(d => Number.isInteger(d.year) && d.year > 0);
+          // Labels = années, Data = counts
+          const tsLabels = filtered.map(d => d.year);
+          const tsData = filtered.map(d => d.count);
+
+          const ctx5 = document.getElementById('timeSeriesChart').getContext('2d');
+          new Chart(ctx5, {
+            type: 'line',
+            data: {
+              labels: tsLabels,
+              datasets: [{
+                label: 'Nouvelles installations',
+                data: tsData,
+                fill: false,
+                tension: 0.2,
+                borderColor: 'rgba(54, 162, 235, 0.8)',
+                pointBackgroundColor: 'rgba(54, 162, 235, 0.8)',
+                pointRadius: 4
+              }]
+            },
+            options: {
+              responsive: false,
+              maintainAspectRatio: false,
+              scales: {
+                x: { title: { display: true, text: 'Année' } },
+                y: {
+                  beginAtZero: true,
+                  title: { display: true, text: 'Nouvelles installations' }
+                }
+              },
+              plugins: {
+                legend: { position: 'top' }
+              }
+            }
+          });
+
+
+
+
+
+
+        // Initialise la carte Leaflet
+        const map = L.map('map').setView([48.8566, 2.3522], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Exemple de points (à remplacer par vos propres coordonnées)
+        Object.entries(data.by_surface).forEach(([surf, cnt], i) => {
+          // position aléatoire autour de Paris pour démo
+          const lat = 48.85 + Math.random() * 0.02;
+          const lon = 2.35 + Math.random() * 0.03;
+          L.circleMarker([lat, lon], { radius: 5 })
+            .bindPopup(`${surf} : ${cnt} terrains`)
+            .addTo(map);
+        });
+      })
+      .catch(console.error);
+  </script>
+</body>
+
+</html>
