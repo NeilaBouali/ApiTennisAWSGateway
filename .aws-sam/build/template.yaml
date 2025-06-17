@@ -1,0 +1,25 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: "D\xE9ploiement de mon API FastAPI avec Lambda & API Gateway"
+Resources:
+  TennisAPI:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: TennisAPI
+      Description: Fonction Lambda pour l'API FastAPI de Tennis
+      Handler: main.handler
+      Runtime: python3.11
+      MemorySize: 512
+      Timeout: 120
+      Policies:
+      - AmazonS3FullAccess
+      - AWSGlueConsoleFullAccess
+      - AmazonAthenaFullAccess
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+    Metadata:
+      SamResourceId: TennisAPI
