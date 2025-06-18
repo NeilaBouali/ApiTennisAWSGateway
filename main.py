@@ -11,7 +11,7 @@ from fastapi import HTTPException
 import json
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
-
+from pydantic import BaseModel
 
 app = FastAPI(title="Le Tennis à PARIS 🇫🇷")
 
@@ -25,6 +25,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+class Feedback(BaseModel):
+    accepted: bool 
+    
 # Monterr /static et /templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
