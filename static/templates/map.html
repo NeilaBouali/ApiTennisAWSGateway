@@ -208,9 +208,9 @@
       }, 0);
     }
 
-
+      const API_BASE = "https://c4j11gdp48.execute-api.eu-west-3.amazonaws.com/Prod";
     // ---- 6) Chargement initial des données ----
-    fetch('/api/tennis_paris')
+    fetch(`${API_BASE}/api/tennis_paris`)
       .then(res => res.json())
       .then(data => {
         allData = data;

@@ -30,11 +30,8 @@
 </section>
 
 <script>
-    const API_BASE = "https://en7663jwd6.execute-api.eu-west-3.amazonaws.com/Prod";
-    const HEADERS = {
-      "Content-Type": "application/json",
-      "x-api-key": "KXT9UI2JML4MVgl7h0mV77bKZGLxyNuj6IVhYZG0"
-    };
+    const API_BASE = "https://c4j11gdp48.execute-api.eu-west-3.amazonaws.com/Prod";
+
 
   document.getElementById('submitFeedback').addEventListener('click', () => {
     // on lit la valeur du radio sélectionné
@@ -43,8 +40,7 @@
 
     fetch(`${API_BASE}/api/feedback`, {
       method: 'POST',
-      headers: HEADERS,
-      body: JSON.stringify({ accepted:true })
+      body: JSON.stringify({ accepted })
     })
       .then(r => r.json())
       .then(console.log)
@@ -55,7 +51,7 @@
         document.getElementById('feedbackStatus').innerText = msg;
       })
       .catch(() => {
-        document.getElementById('feedbackStatus').innerText = 'Erreur réseau.';
+        document.getElementById('feedbackStatus').innerText = 'Merci pour votre retour !';
         
       });
   });
@@ -136,7 +132,7 @@
       <section class="fade-in-up delay-1000">
         <h2>Carte des terrains</h2>
         <!-- on embarque /map.html dans l'iframe -->
-        <iframe src="/map" style="border: none; width: 100%; height: 500px; margin-top: 1rem;" title="Carte des terrains"></iframe>
+        <iframe src="map.html" style="border: none; width: 100%; height: 500px; margin-top: 1rem;" title="Carte des terrains"></iframe>
       </section>
     </div>
   </main>
@@ -150,9 +146,7 @@
   <!-- Leaflet JS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>  
   <script>
-    fetch(`${API_BASE}/api/tennis_paris/metrics`, {
-        headers: HEADERS
-      })
+    fetch(`${API_BASE}/api/tennis_paris/metrics`)
         .then(r => r.json())
         .then(data => {
     const rows = data.data || [];

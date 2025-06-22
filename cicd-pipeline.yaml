@@ -1,0 +1,49 @@
+name: Deploy Tennis API & Front
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: eu-west-3
+      S3_BUCKET: mon-dashboard-tennis-paris
+      API_STACK_NAME: sam-appV3
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.10
+
+      - name: Install SAM CLI
+        uses: aws-actions/setup-sam@v2
+
+      - name: Install dependencies
+        run: |
+          cd api
+          pip install -r requirements.txt -t .
+
+      - name: SAM Build
+        run: sam build
+
+      - name: SAM Deploy
+        run: |
+          sam deploy --stack-name $API_STACK_NAME \
+                     --region $AWS_REGION \
+                     --capabilities CAPABILITY_IAM \
+                     --no-confirm-changeset \
+                     --resolve-s3
+
+      - name: Upload frontend to S3
+        run: |
+          aws s3 sync ./front s3://$S3_BUCKET/ --delete
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
